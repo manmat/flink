@@ -50,12 +50,12 @@ trait PerformanceScore
  * @tparam PredictionType output type
  */
 abstract class MeanScore[PredictionType: TypeInformation: ClassTag](
-    scoringFct: (PredictionType, PredictionType) => Double)
+    scoringFct: (PredictionType, PredictionType) => Option[Double])
     (implicit yyt: TypeInformation[(PredictionType, PredictionType)])
   extends Score[PredictionType] with Serializable {
 
   def evaluate(trueAndPredicted: DataSet[(PredictionType, PredictionType)]): DataSet[Double] = {
-    trueAndPredicted.map(yy => scoringFct(yy._1, yy._2)).mean()
+    trueAndPredicted.map(yy => scoringFct(yy._1, yy._2)).filter(_.nonEmpty).map(_.getOrElse(0.0)).mean()
   }
 }
 
@@ -70,7 +70,7 @@ object RegressionScores {
    *
    * @return a Loss object
    */
-  def squaredLoss = new MeanScore[Double]((y1,y2) => (y1 - y2) * (y1 - y2)) with Loss
+  def squaredLoss = new MeanScore[Double]((y1,y2) => Some((y1 - y2) * (y1 - y2))) with Loss
 
   /**
    * Mean Zero One Loss Function also usable for score information
@@ -82,7 +82,7 @@ object RegressionScores {
   def zeroOneSignumLoss = new MeanScore[Double]({ (y1, y2) =>
     val sy1 = y1.signum
     val sy2 = y2.signum
-    if (sy1 == sy2) 0 else 1
+    if (sy1 == sy2) Some(0) else Some(1)
   }) with Loss
 
   /** Calculates the coefficient of determination, $R^2^$
@@ -126,8 +126,66 @@ object ClassificationScores {
     *
     */
   def accuracyScore = {
-    new MeanScore[Double]((y1, y2) => if (y1.approximatelyEquals(y2)) 1 else 0)
+    new MeanScore[Int]((y1, y2) => if (y1 == y2) Some(1) else Some(0))
       with PerformanceScore
+  }
+
+  def errorRateScore = {
+    new MeanScore[Int]((y1, y2) => if (y1 == y2) Some(0) else Some(1))
+      with PerformanceScore //TODO
+  }
+
+  def precisionScore = {
+    new MeanScore[Boolean]((y1, y2) => if (y1 && y2) Some(1) else if (y2 && !y1) Some(0) else None)
+      with PerformanceScore //TODO
+  }
+
+  def recallScore = {
+    new MeanScore[Boolean]((y1, y2) => if (y1 && y2) Some(1) else if (y1 && !y2) Some(0) else None)
+      with PerformanceScore //TODO
+  }
+
+  def trueNegativeRateScore = {
+    new MeanScore[Boolean]((y1, y2) => if (!y1 && !y2) Some(1) else if (!y1 && y2) Some(0) else None)
+      with PerformanceScore //TODO
+  }
+
+  def falsePositiveRateScore = {
+    new MeanScore[Boolean]((y1, y2) => if (!y1 && y2) Some(1) else if (!y1 && !y2) Some(0) else None)
+      with PerformanceScore //TODO
+  }
+
+  def falseDiscoveryRateScore = {
+    new MeanScore[Boolean]((y1, y2) => if (!y1 && y2) Some(1) else if (y1 && y2) Some(0) else None)
+      with PerformanceScore //TODO
+  }
+
+  def negativePredictiveValueScore = {
+    new MeanScore[Boolean]((y1, y2) => if (!y1 && y2) Some(1) else if (y1 && y2) Some(0) else None)
+      with PerformanceScore //TODO
+  }
+
+  def fMeasureScore = {
+    new Score[Boolean] with PerformanceScore { //TODO
+      override def evaluate(trueAndPredicted: DataSet[(Boolean, Boolean)]): DataSet[Double]  ={
+        val precision = precisionScore.evaluate(trueAndPredicted)
+        val recall = recallScore.evaluate(trueAndPredicted)
+        precision.map(p => recall.map(r => 2 / (1/p + 1/r))).collect().head
+      }
+    }
+  }
+
+  def AUCScore = {
+    new Score[Double] with PerformanceScore { //TODO
+      override def evaluate(trueAndPredicted: DataSet[(Double, Double)]): DataSet[Double]  = {
+        val pos = 1 / trueAndPredicted.filter(_._1 == 1.0).count()
+        val neg = 1 / trueAndPredicted.filter(_._1 == 0.0).count()
+        val grouped = trueAndPredicted.collect().groupBy(_._2).map(g => (g._1, (g._2.count(_._1 == 1.0), g._2.count(_._1 == 1.0))))
+        val sorted = grouped.toSeq.sortBy(_._1)
+        val (height, area) = sorted.foldLeft((0.0, 0.0)){ (acc, elem) => (acc._1 + elem._2._1 * pos, acc._2 + acc._1 * elem._2._2 * neg)}
+        trueAndPredicted.getExecutionEnvironment.fromElements(area)
+      }
+    }
   }
 
   /**
@@ -138,7 +196,7 @@ object ClassificationScores {
    * @return a Loss object
    */
   def zeroOneLoss = {
-    new MeanScore[Double]((y1, y2) => if (y1.approximatelyEquals(y2)) 0 else 1) with Loss
+    new MeanScore[Double]((y1, y2) => if (y1.approximatelyEquals(y2)) Some(0) else Some(1)) with Loss
   }
 }
 
