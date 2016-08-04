@@ -71,7 +71,7 @@ class ScoreITSuite extends FlatSpec with Matchers with FlinkTestBase {
   it should "work for accuracy score" in {
     val env = ExecutionEnvironment.getExecutionEnvironment
 
-    val yy = env.fromCollection(Seq(0.0 -> 0.0, 1.0 -> 1.0, 2.0 -> 2.0, 3.0 -> 2.0))
+    val yy = env.fromCollection(Seq(0 -> 0, 1 -> 1, 2 -> 2, 3 -> 2))
 
     val accuracyScore = ClassificationScores.accuracyScore
 

@@ -23,6 +23,7 @@ import org.apache.flink.api.scala._
 import org.apache.flink.ml._
 
 import scala.reflect.ClassTag
+import scala.math.log
 
 /**
  * Evaluation score
@@ -55,7 +56,7 @@ abstract class MeanScore[PredictionType: TypeInformation: ClassTag](
   extends Score[PredictionType] with Serializable {
 
   def evaluate(trueAndPredicted: DataSet[(PredictionType, PredictionType)]): DataSet[Double] = {
-    trueAndPredicted.map(yy => scoringFct(yy._1, yy._2)).filter(_.nonEmpty).map(_.getOrElse(0.0)).mean()
+    trueAndPredicted.map(yy => scoringFct(yy._1, yy._2)).filter(_.nonEmpty).map(_.get).mean()
   }
 }
 
@@ -161,7 +162,7 @@ object ClassificationScores {
   }
 
   def negativePredictiveValueScore = {
-    new MeanScore[Boolean]((y1, y2) => if (!y1 && y2) Some(1) else if (y1 && y2) Some(0) else None)
+    new MeanScore[Boolean]((y1, y2) => if (!y1 && !y2) Some(1) else if (y1 && !y2) Some(0) else None)
       with PerformanceScore //TODO
   }
 
@@ -170,7 +171,9 @@ object ClassificationScores {
       override def evaluate(trueAndPredicted: DataSet[(Boolean, Boolean)]): DataSet[Double]  ={
         val precision = precisionScore.evaluate(trueAndPredicted)
         val recall = recallScore.evaluate(trueAndPredicted)
-        precision.map(p => recall.map(r => 2 / (1/p + 1/r))).collect().head
+        val p = precision.collect().head
+        val r = recall.collect().head
+        trueAndPredicted.getExecutionEnvironment.fromElements(2 / (1/p + 1/r))
       }
     }
   }
@@ -184,6 +187,16 @@ object ClassificationScores {
         val sorted = grouped.toSeq.sortBy(_._1)
         val (height, area) = sorted.foldLeft((0.0, 0.0)){ (acc, elem) => (acc._1 + elem._2._1 * pos, acc._2 + acc._1 * elem._2._2 * neg)}
         trueAndPredicted.getExecutionEnvironment.fromElements(area)
+      }
+    }
+  }
+
+  def logLossScore = {
+    new Score[Double] with PerformanceScore { //TODO
+      override def evaluate(trueAndPredicted: DataSet[(Double, Double)]): DataSet[Double]  = {
+        val n = trueAndPredicted.count()
+        val l = trueAndPredicted.map(actAndPred => actAndPred._1 * log(actAndPred._2) + (1.0 - actAndPred._1) * log(1.0 - actAndPred._2))
+        l.map(x => (1, x)).sum(1).map(ll => ll._2 * (- 1 / n))
       }
     }
   }
