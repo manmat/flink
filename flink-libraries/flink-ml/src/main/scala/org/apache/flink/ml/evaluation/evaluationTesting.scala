@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.flink.ml.evaluation
 
 import org.apache.flink.api.java.LocalEnvironment
@@ -20,36 +38,45 @@ object evaluationTesting {
     val env6 = ExecutionEnvironment.getExecutionEnvironment
     val env7 = ExecutionEnvironment.getExecutionEnvironment
 
-    //val resultsInNumbers: DataSet[(Double, Double)] = env.readCsvFile[(Double, Double)]("/Users/mani/Downloads/eredm_stathoz.csv",
-    val resultsInNumbers: DataSet[(Int, Int)] = env.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
+    //val resultsInNumbers: DataSet[(Double, Double)] =
+    // env.readCsvFile[(Double, Double)]("/Users/mani/Downloads/eredm_stathoz.csv",
+    val resultsInNumbers: DataSet[(Int, Int)] =
+      env.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))
-    val resultsInNumbers1: DataSet[(Int, Int)] = env1.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
+    val resultsInNumbers1: DataSet[(Int, Int)] =
+      env1.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))
-    val resultsInNumbers2: DataSet[(Int, Int)] = env2.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
+    val resultsInNumbers2: DataSet[(Int, Int)] =
+      env2.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))
-    val resultsInNumbers3: DataSet[(Int, Int)] = env3.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
+    val resultsInNumbers3: DataSet[(Int, Int)] =
+      env3.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))
-    val resultsInNumbers4: DataSet[(Int, Int)] = env4.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
+    val resultsInNumbers4: DataSet[(Int, Int)] =
+      env4.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))
-    val resultsInNumbers5: DataSet[(Int, Int)] = env5.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
+    val resultsInNumbers5: DataSet[(Int, Int)] =
+      env5.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))
-    val resultsInNumbers6: DataSet[(Int, Int)] = env6.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
+    val resultsInNumbers6: DataSet[(Int, Int)] =
+      env6.readCsvFile[(Int, Int)]("/Users/mani/flink_measurement/classes.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))
-    val resultsInNumbers7: DataSet[(Double, Double)] = env7.readCsvFile[(Double, Double)]("/Users/mani/flink_measurement/probabilities.tsv",
+    val resultsInNumbers7: DataSet[(Double, Double)] =
+      env7.readCsvFile[(Double, Double)]("/Users/mani/flink_measurement/probabilities.tsv",
       lineDelimiter = "\n",
       fieldDelimiter = "\t",
       includedFields = Array(0, 1))

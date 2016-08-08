@@ -137,32 +137,38 @@ object ClassificationScores {
   }
 
   def precisionScore = {
-    new MeanScore[Boolean]((y1, y2) => if (y1 && y2) Some(1) else if (y2 && !y1) Some(0) else None)
+    new MeanScore[Boolean]((y1, y2) =>
+      if (y1 && y2) Some(1) else if (y2 && !y1) Some(0) else None)
       with PerformanceScore //TODO
   }
 
   def recallScore = {
-    new MeanScore[Boolean]((y1, y2) => if (y1 && y2) Some(1) else if (y1 && !y2) Some(0) else None)
+    new MeanScore[Boolean]((y1, y2) =>
+      if (y1 && y2) Some(1) else if (y1 && !y2) Some(0) else None)
       with PerformanceScore //TODO
   }
 
   def trueNegativeRateScore = {
-    new MeanScore[Boolean]((y1, y2) => if (!y1 && !y2) Some(1) else if (!y1 && y2) Some(0) else None)
+    new MeanScore[Boolean]((y1, y2) =>
+      if (!y1 && !y2) Some(1) else if (!y1 && y2) Some(0) else None)
       with PerformanceScore //TODO
   }
 
   def falsePositiveRateScore = {
-    new MeanScore[Boolean]((y1, y2) => if (!y1 && y2) Some(1) else if (!y1 && !y2) Some(0) else None)
+    new MeanScore[Boolean]((y1, y2) =>
+      if (!y1 && y2) Some(1) else if (!y1 && !y2) Some(0) else None)
       with PerformanceScore //TODO
   }
 
   def falseDiscoveryRateScore = {
-    new MeanScore[Boolean]((y1, y2) => if (!y1 && y2) Some(1) else if (y1 && y2) Some(0) else None)
+    new MeanScore[Boolean]((y1, y2) =>
+      if (!y1 && y2) Some(1) else if (y1 && y2) Some(0) else None)
       with PerformanceScore //TODO
   }
 
   def negativePredictiveValueScore = {
-    new MeanScore[Boolean]((y1, y2) => if (!y1 && !y2) Some(1) else if (y1 && !y2) Some(0) else None)
+    new MeanScore[Boolean]((y1, y2) =>
+      if (!y1 && !y2) Some(1) else if (y1 && !y2) Some(0) else None)
       with PerformanceScore //TODO
   }
 
@@ -183,9 +189,11 @@ object ClassificationScores {
       override def evaluate(trueAndPredicted: DataSet[(Double, Double)]): DataSet[Double]  = {
         val pos = 1 / trueAndPredicted.filter(_._1 == 1.0).count()
         val neg = 1 / trueAndPredicted.filter(_._1 == 0.0).count()
-        val grouped = trueAndPredicted.collect().groupBy(_._2).map(g => (g._1, (g._2.count(_._1 == 1.0), g._2.count(_._1 == 1.0))))
+        val grouped = trueAndPredicted.collect().groupBy(_._2)
+          .map(g => (g._1, (g._2.count(_._1 == 1.0), g._2.count(_._1 == 1.0))))
         val sorted = grouped.toSeq.sortBy(_._1)
-        val (height, area) = sorted.foldLeft((0.0, 0.0)){ (acc, elem) => (acc._1 + elem._2._1 * pos, acc._2 + acc._1 * elem._2._2 * neg)}
+        val (height, area) = sorted.foldLeft((0.0, 0.0)){ (acc, elem) =>
+          (acc._1 + elem._2._1 * pos, acc._2 + acc._1 * elem._2._2 * neg)}
         trueAndPredicted.getExecutionEnvironment.fromElements(area)
       }
     }
@@ -195,7 +203,8 @@ object ClassificationScores {
     new Score[Double] with PerformanceScore { //TODO
       override def evaluate(trueAndPredicted: DataSet[(Double, Double)]): DataSet[Double]  = {
         val n = trueAndPredicted.count()
-        val l = trueAndPredicted.map(actAndPred => actAndPred._1 * log(actAndPred._2) + (1.0 - actAndPred._1) * log(1.0 - actAndPred._2))
+        val l = trueAndPredicted.map(actAndPred =>
+          actAndPred._1 * log(actAndPred._2) + (1.0 - actAndPred._1) * log(1.0 - actAndPred._2))
         l.map(x => (1, x)).sum(1).map(ll => ll._2 * (- 1 / n))
       }
     }
@@ -209,7 +218,8 @@ object ClassificationScores {
    * @return a Loss object
    */
   def zeroOneLoss = {
-    new MeanScore[Double]((y1, y2) => if (y1.approximatelyEquals(y2)) Some(0) else Some(1)) with Loss
+    new MeanScore[Double]((y1, y2) =>
+      if (y1.approximatelyEquals(y2)) Some(0) else Some(1)) with Loss
   }
 }
 
