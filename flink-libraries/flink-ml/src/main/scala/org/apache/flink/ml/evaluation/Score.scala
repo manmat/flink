@@ -21,6 +21,7 @@ package org.apache.flink.ml.evaluation
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.scala._
 import org.apache.flink.ml._
+import java.io.Serializable
 
 import scala.reflect.ClassTag
 import scala.math.log
@@ -187,13 +188,13 @@ object ClassificationScores {
   def AUCScore = {
     new Score[Double] with PerformanceScore { //TODO
       override def evaluate(trueAndPredicted: DataSet[(Double, Double)]): DataSet[Double]  = {
-        val pos = 1 / trueAndPredicted.filter(_._1 == 1.0).count()
-        val neg = 1 / trueAndPredicted.filter(_._1 == 0.0).count()
+        val pos = 1.0 / trueAndPredicted.filter(_._1 == 1.0).count()
+        val neg = 1.0 / trueAndPredicted.filter(_._1 == 0.0).count()
         val grouped = trueAndPredicted.collect().groupBy(_._2)
-          .map(g => (g._1, (g._2.count(_._1 == 1.0), g._2.count(_._1 == 1.0))))
+          .map(g => (g._1, (g._2.count(_._1 == 0.0), g._2.count(_._1 == 1.0))))
         val sorted = grouped.toSeq.sortBy(_._1)
         val (height, area) = sorted.foldLeft((0.0, 0.0)){ (acc, elem) =>
-          (acc._1 + elem._2._1 * pos, acc._2 + acc._1 * elem._2._2 * neg)}
+          (acc._1 + elem._2._1 * neg, acc._2 + acc._1 * elem._2._2 * pos)}
         trueAndPredicted.getExecutionEnvironment.fromElements(area)
       }
     }
@@ -205,7 +206,7 @@ object ClassificationScores {
         val n = trueAndPredicted.count()
         val l = trueAndPredicted.map(actAndPred =>
           actAndPred._1 * log(actAndPred._2) + (1.0 - actAndPred._1) * log(1.0 - actAndPred._2))
-        l.map(x => (1, x)).sum(1).map(ll => ll._2 * (- 1 / n))
+        l.map(x => (1, x)).sum(1).map(ll => ll._2 * (- 1.0 / n))
       }
     }
   }
@@ -223,4 +224,59 @@ object ClassificationScores {
   }
 }
 
+object RecommendationScores extends java.io.Serializable {
 
+  private def precisionAtK(k: Int, actual: Array[Int], predicted: Array[Int]): Double = {
+    //val pred = predicted.take(k)
+    val a = actual.length
+    //actual.intersect(pred).length / a : Double
+    a
+  }
+
+  def averagePrecisionAtK(k: Int) = {
+    new Score[Array[Int]] with PerformanceScore {
+      //TODO
+      override def evaluate(data: DataSet[(Array[Int], Array[Int])]): DataSet[Double] = {
+        val perUser = data.map { trueAndPred => precisionAtK(k, trueAndPred._1, trueAndPred._2)
+          //val pred = trueAndPred._2.take(k)
+          //val a = trueAndPred._1.length
+          //trueAndPred._1.intersect(pred).length / a : Double}
+          //a
+        }
+          //val perUser = data.map(trueAndPred => 2)
+        perUser.mean()
+      }
+    }
+  }
+
+  def meanAveragePrecisionAtK(k: Int) = {
+    new Score[Array[Int]] with PerformanceScore {
+      //TODO
+      override def evaluate(data: DataSet[(Array[Int], Array[Int])]): DataSet[Double] = {
+        val perUser = data.map{ trueAndPred =>
+          val precisions = 1 to k map (_k => precisionAtK(_k, trueAndPred._1, trueAndPred._2))
+          precisions.sum / k
+        }
+        perUser.mean()
+      }
+    }
+  }
+
+  def averageRecallAtK(k: Int) = {
+    new Score[Array[Int]] with PerformanceScore {
+      //TODO
+      override def evaluate(data: DataSet[(Array[Int], Array[Int])]): DataSet[Double] = {
+        val perUser = data.map { trueAndPred =>
+          val act = trueAndPred._1.toSet
+          val pred = trueAndPred._2.take(k).toSet
+          act.intersect(pred).size / k : Double
+        }
+        perUser.mean()
+      }
+    }
+  }
+
+  private def iDCG(k: Int) = {
+
+  }
+}
