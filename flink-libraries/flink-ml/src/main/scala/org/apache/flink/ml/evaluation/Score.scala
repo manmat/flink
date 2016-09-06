@@ -34,7 +34,7 @@ import scala.math.log
  *
  * @tparam PredictionType output type
  */
-trait Score[PredictionType] {
+trait Score[PredictionType] extends java.io.Serializable {
   def evaluate(trueAndPredicted: DataSet[(PredictionType, PredictionType)]): DataSet[Double]
 }
 
@@ -227,23 +227,15 @@ object ClassificationScores {
 object RecommendationScores extends java.io.Serializable {
 
   private def precisionAtK(k: Int, actual: Array[Int], predicted: Array[Int]): Double = {
-    //val pred = predicted.take(k)
-    val a = actual.length
-    //actual.intersect(pred).length / a : Double
-    a
+    val pred = predicted.take(k)
+    (actual.intersect(pred).length: Double) / (k : Double)
   }
 
   def averagePrecisionAtK(k: Int) = {
     new Score[Array[Int]] with PerformanceScore {
       //TODO
       override def evaluate(data: DataSet[(Array[Int], Array[Int])]): DataSet[Double] = {
-        val perUser = data.map { trueAndPred => precisionAtK(k, trueAndPred._1, trueAndPred._2)
-          //val pred = trueAndPred._2.take(k)
-          //val a = trueAndPred._1.length
-          //trueAndPred._1.intersect(pred).length / a : Double}
-          //a
-        }
-          //val perUser = data.map(trueAndPred => 2)
+        val perUser = data.map(trueAndPred => precisionAtK(k, trueAndPred._1, trueAndPred._2))
         perUser.mean()
       }
     }
@@ -255,7 +247,7 @@ object RecommendationScores extends java.io.Serializable {
       override def evaluate(data: DataSet[(Array[Int], Array[Int])]): DataSet[Double] = {
         val perUser = data.map{ trueAndPred =>
           val precisions = 1 to k map (_k => precisionAtK(_k, trueAndPred._1, trueAndPred._2))
-          precisions.sum / k
+          precisions.sum / (k : Double)
         }
         perUser.mean()
       }
@@ -269,7 +261,7 @@ object RecommendationScores extends java.io.Serializable {
         val perUser = data.map { trueAndPred =>
           val act = trueAndPred._1.toSet
           val pred = trueAndPred._2.take(k).toSet
-          act.intersect(pred).size / k : Double
+          (act.intersect(pred).size : Double) / (trueAndPred._1.length : Double)
         }
         perUser.mean()
       }
